@@ -141,6 +141,8 @@ func WrapCommandFuncForCobra(f CommandFunc) func(cmd *cobra.Command, _ []string)
 		status, err := f(Flags{cmd.Flags()})
 		if status > 1 {
 			cmd.SilenceErrors = true
+			caddy.Log().Error(fmt.Sprintf("command error: %v", err))
+
 			return &exitError{ExitCode: status, Err: err}
 		}
 		return err

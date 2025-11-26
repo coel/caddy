@@ -173,6 +173,8 @@ func cmdExportStorage(fl Flags) (int, error) {
 		return caddy.ExitCodeFailedStartup, err
 	}
 
+	caddy.Log().Info(fmt.Sprintf("number keys: %v", len(keys)))
+
 	// setup output
 	var f *os.File
 	if exportStorageCmdOutputFlag == "-" {
@@ -195,16 +197,19 @@ func cmdExportStorage(fl Flags) (int, error) {
 				caddy.Log().Warn(fmt.Sprintf("key: %s removed while export is in-progress", k))
 				continue
 			}
+			caddy.Log().Error(fmt.Sprintf("stat error: %v", err))
 			return caddy.ExitCodeFailedQuit, err
 		}
 
 		if info.IsTerminal {
+			caddy.Log().Info(fmt.Sprintf("exporting key: %s", k))
 			v, err := stor.Load(ctx, k)
 			if err != nil {
 				if errors.Is(err, fs.ErrNotExist) {
 					caddy.Log().Warn(fmt.Sprintf("key: %s removed while export is in-progress", k))
 					continue
 				}
+				caddy.Log().Error(fmt.Sprintf("load error: %v", err))
 				return caddy.ExitCodeFailedQuit, err
 			}
 
@@ -216,14 +221,17 @@ func cmdExportStorage(fl Flags) (int, error) {
 			}
 
 			if err = tw.WriteHeader(hdr); err != nil {
+				caddy.Log().Error(fmt.Sprintf("header error: %v", err))
 				return caddy.ExitCodeFailedQuit, fmt.Errorf("writing archive: %v", err)
 			}
 			if _, err = tw.Write(v); err != nil {
+				caddy.Log().Error(fmt.Sprintf("write error: %v", err))
 				return caddy.ExitCodeFailedQuit, fmt.Errorf("writing archive: %v", err)
 			}
 		}
 	}
 	if err = tw.Close(); err != nil {
+		caddy.Log().Error(fmt.Sprintf("close error: %v", err))
 		return caddy.ExitCodeFailedQuit, fmt.Errorf("writing archive: %v", err)
 	}
 
